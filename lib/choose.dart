@@ -9,6 +9,7 @@ class ChoosePage extends StatefulWidget {
 
 class _ChoosePageState extends State<ChoosePage> {
   String? selectedBlock;
+  final Map<String, String?> selectedSeats = {};
 
   final List<String> blocks = ['A Block', 'E Block AC', 'E Block Non AC'];
 
@@ -138,6 +139,7 @@ else if (selectedBlock == 'E Block Non AC')
     required int cols,
     required Set<String> unavailableSeats,
   }) {
+    final matrixKey = selectedBlock! + '-' + title;
     return Card(
       elevation: 2,
       color: Colors.grey.shade100,
@@ -153,7 +155,22 @@ else if (selectedBlock == 'E Block Non AC')
                   Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
-            buildSeatMatrix(rows: rows, cols: cols, unavailableSeats: unavailableSeats),
+
+buildSeatMatrix(
+  rows: rows,
+  cols: cols,
+  unavailableSeats: unavailableSeats,
+  selectedSeat: selectedSeats[matrixKey],
+  onSeatTap: (seatKey) {
+  setState(() {
+    // Clear all previous selections
+    selectedSeats.clear();
+    
+    // Save only the new selection
+    selectedSeats[matrixKey] = seatKey;
+  });
+},
+),
           ],
         ),
       ),
@@ -166,6 +183,8 @@ Widget buildSeatMatrix({
   required int rows,
   required int cols,
   required Set<String> unavailableSeats,
+  required String? selectedSeat,
+  required Function(String seatKey) onSeatTap,
 }) {
   return Column(
     children: List.generate(rows, (row) {
@@ -174,20 +193,37 @@ Widget buildSeatMatrix({
         children: List.generate(cols, (col) {
           final seatKey = '${row + 1}-${col + 1}';
           final isUnavailable = unavailableSeats.contains(seatKey);
+          final isSelected = selectedSeat == seatKey;
 
-          return Container(
-            margin: const EdgeInsets.all(6), // Increased spacing between cells
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: isUnavailable ? Colors.red.shade300 : Colors.green.shade300,
-              border: Border.all(color: Colors.black45),
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: Center(
-              child: Text(
-                seatKey,
-                style: const TextStyle(fontSize: 10),
+          Color seatColor;
+          if (isUnavailable) {
+            seatColor = Colors.red.shade300;
+          } else if (isSelected) {
+            seatColor = Colors.yellow.shade600;
+          } else {
+            seatColor = Colors.green.shade300;
+          }
+
+          return GestureDetector(
+            onTap: isUnavailable
+                ? null
+                : () {
+                    onSeatTap(seatKey);
+                  },
+            child: Container(
+              margin: const EdgeInsets.all(6),
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: seatColor,
+                border: Border.all(color: Colors.black45),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Center(
+                child: Text(
+                  seatKey,
+                  style: const TextStyle(fontSize: 10),
+                ),
               ),
             ),
           );

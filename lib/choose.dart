@@ -1,4 +1,3 @@
-// choose.dart
 import 'package:flutter/material.dart';
 
 class ChoosePage extends StatefulWidget {
@@ -11,10 +10,19 @@ class ChoosePage extends StatefulWidget {
 class _ChoosePageState extends State<ChoosePage> {
   String? selectedBlock;
 
-  final List<String> blocks = ['A Block', 'E Block'];
+  final List<String> blocks = ['A Block', 'E Block AC', 'E Block Non AC'];
 
   final Set<String> groundFloorUnavailable = {'6-3', '6-4', '15-4'};
   final Set<String> firstFloorUnavailable = {'5-3', '5-4', '6-3', '6-4'};
+
+  final Set<String> eBlockNonAcUnavailable = {
+    '24-3',
+    '24-4',
+    '25-3',
+    '25-4',
+    '26-3',
+    '26-4'
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -24,13 +32,16 @@ class _ChoosePageState extends State<ChoosePage> {
         backgroundColor: Colors.teal,
       ),
       body: Padding(
-        padding: const EdgeInsets.all(12.0),
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            DropdownButton<String>(
+            DropdownButtonFormField<String>(
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                labelText: 'Select Block',
+              ),
               value: selectedBlock,
-              hint: const Text('Select Block'),
               items: blocks
                   .map((block) => DropdownMenuItem(
                         value: block,
@@ -45,31 +56,104 @@ class _ChoosePageState extends State<ChoosePage> {
             ),
             const SizedBox(height: 20),
 
+            if (selectedBlock != null) buildLegend(),
+
+            const SizedBox(height: 10),
+
             if (selectedBlock == 'A Block')
               Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Ground Floor', style: Theme.of(context).textTheme.titleLarge),
-                      const SizedBox(height: 10),
-                      SeatMatrix(unavailableSeats: groundFloorUnavailable),
-                      const SizedBox(height: 20),
-                      Text('First Floor', style: Theme.of(context).textTheme.titleLarge),
-                      const SizedBox(height: 10),
-                      SeatMatrix(unavailableSeats: firstFloorUnavailable),
-                    ],
-                  ),
+                child: ListView(
+                  children: [
+                    buildMatrixCard(
+                      title: 'Ground Floor',
+                      rows: 15,
+                      cols: 4,
+                      unavailableSeats: groundFloorUnavailable,
+                    ),
+                    const SizedBox(height: 20),
+                    buildMatrixCard(
+                      title: 'First Floor',
+                      rows: 15,
+                      cols: 4,
+                      unavailableSeats: firstFloorUnavailable,
+                    ),
+                  ],
                 ),
               )
-            else if (selectedBlock == 'E Block')
-              const Padding(
-                padding: EdgeInsets.all(8.0),
-                child: Text(
-                  'No matrix available for E Block',
-                  style: TextStyle(fontSize: 16, color: Colors.grey),
-                ),
-              )
+            else if (selectedBlock == 'E Block AC')
+  Expanded(
+    child: SingleChildScrollView(
+      child: buildMatrixCard(
+        title: 'E Block AC',
+        rows: 27,
+        cols: 4,
+        unavailableSeats: {},
+      ),
+    ),
+  )
+else if (selectedBlock == 'E Block Non AC')
+  Expanded(
+    child: SingleChildScrollView(
+      child: buildMatrixCard(
+        title: 'E Block Non AC',
+        rows: 30,
+        cols: 4,
+        unavailableSeats: eBlockNonAcUnavailable,
+      ),
+    ),
+  ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget buildLegend() {
+    return Row(
+      children: [
+        buildLegendItem(Colors.green.shade300, 'Available'),
+        const SizedBox(width: 16),
+        buildLegendItem(Colors.red.shade300, 'Unavailable'),
+      ],
+    );
+  }
+
+  Widget buildLegendItem(Color color, String label) {
+    return Row(
+      children: [
+        Container(
+          width: 20,
+          height: 20,
+          color: color,
+          margin: const EdgeInsets.only(right: 6),
+        ),
+        Text(label),
+      ],
+    );
+  }
+
+  Widget buildMatrixCard({
+    required String title,
+    required int rows,
+    required int cols,
+    required Set<String> unavailableSeats,
+  }) {
+    return Card(
+      elevation: 2,
+      color: Colors.grey.shade100,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style:
+                  Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            buildSeatMatrix(rows: rows, cols: cols, unavailableSeats: unavailableSeats),
           ],
         ),
       ),
@@ -77,39 +161,38 @@ class _ChoosePageState extends State<ChoosePage> {
   }
 }
 
-class SeatMatrix extends StatelessWidget {
-  final Set<String> unavailableSeats;
+/// Reusable function to build a seat matrix
+Widget buildSeatMatrix({
+  required int rows,
+  required int cols,
+  required Set<String> unavailableSeats,
+}) {
+  return Column(
+    children: List.generate(rows, (row) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: List.generate(cols, (col) {
+          final seatKey = '${row + 1}-${col + 1}';
+          final isUnavailable = unavailableSeats.contains(seatKey);
 
-  const SeatMatrix({super.key, required this.unavailableSeats});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: List.generate(15, (row) {
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(4, (col) {
-            final seatKey = '${row + 1}-${col + 1}';
-            final isUnavailable = unavailableSeats.contains(seatKey);
-
-            return Container(
-              margin: const EdgeInsets.all(4),
-              width: 30,
-              height: 30,
-              decoration: BoxDecoration(
-                color: isUnavailable ? Colors.red.shade300 : Colors.green.shade300,
-                border: Border.all(),
+          return Container(
+            margin: const EdgeInsets.all(6), // Increased spacing between cells
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: isUnavailable ? Colors.red.shade300 : Colors.green.shade300,
+              border: Border.all(color: Colors.black45),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Center(
+              child: Text(
+                seatKey,
+                style: const TextStyle(fontSize: 10),
               ),
-              child: Center(
-                child: Text(
-                  seatKey,
-                  style: const TextStyle(fontSize: 10),
-                ),
-              ),
-            );
-          }),
-        );
-      }),
-    );
-  }
+            ),
+          );
+        }),
+      );
+    }),
+  );
 }

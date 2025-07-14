@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+void main() => runApp(const MaterialApp(home: ChoosePage()));
+
 class ChoosePage extends StatefulWidget {
   const ChoosePage({super.key});
 
@@ -9,168 +11,225 @@ class ChoosePage extends StatefulWidget {
 
 class _ChoosePageState extends State<ChoosePage> {
   String? selectedBlock;
-  final Map<String, String?> selectedSeats = {};
-
-  final List<String> blocks = ['A Block', 'E Block AC', 'E Block Non AC'];
-
-  final Set<String> groundFloorUnavailable = {'6-3', '6-4', '15-4'};
-  final Set<String> firstFloorUnavailable = {'5-3', '5-4', '6-3', '6-4'};
-
-  final Set<String> eBlockNonAcUnavailable = {
-    '24-3',
-    '24-4',
-    '25-3',
-    '25-4',
-    '26-3',
-    '26-4'
-  };
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('TCE Hostel'),
+        title: const Text("TCE Hostel"),
         backgroundColor: Colors.teal,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: selectedBlock == null
+            ? buildBlockSelection()
+            : buildFloorOptions(selectedBlock!),
+      ),
+    );
+  }
+
+  Widget buildBlockSelection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          "Choose a Block",
+          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 30),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            DropdownButtonFormField<String>(
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                labelText: 'Select Block',
-              ),
-              value: selectedBlock,
-              items: blocks
-                  .map((block) => DropdownMenuItem(
-                        value: block,
-                        child: Text(block),
-                      ))
-                  .toList(),
-              onChanged: (value) {
+            buildBlockCard("Block A", Icons.apartment),
+            buildBlockCard("Block E", Icons.location_city),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget buildBlockCard(String title, IconData icon) {
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          selectedBlock = title;
+        });
+      },
+      child: Card(
+        elevation: 4,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Container(
+          width: 150,
+          height: 120,
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 40, color: Colors.teal),
+              const SizedBox(height: 10),
+              Text(title,
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.w600)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget buildFloorOptions(String block) {
+    final List<Map<String, String>> floorData = block == "Block A"
+        ? [
+            {"label": "Ground Floor", "icon": "1"},
+            {"label": "First Floor", "icon": "2"},
+          ]
+        : [
+            {"label": "First Floor", "icon": "2"},
+            {"label": "Third Floor (A/C)", "icon": "ac"},
+          ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            IconButton(
+              icon: const Icon(Icons.arrow_back),
+              onPressed: () {
                 setState(() {
-                  selectedBlock = value;
+                  selectedBlock = null;
                 });
               },
             ),
-            const SizedBox(height: 20),
-
-            if (selectedBlock != null) buildLegend(),
-
-            const SizedBox(height: 10),
-
-            if (selectedBlock == 'A Block')
-              Expanded(
-                child: ListView(
-                  children: [
-                    buildMatrixCard(
-                      title: 'Ground Floor',
-                      rows: 15,
-                      cols: 4,
-                      unavailableSeats: groundFloorUnavailable,
-                    ),
-                    const SizedBox(height: 20),
-                    buildMatrixCard(
-                      title: 'First Floor',
-                      rows: 15,
-                      cols: 4,
-                      unavailableSeats: firstFloorUnavailable,
-                    ),
-                  ],
-                ),
-              )
-            else if (selectedBlock == 'E Block AC')
-  Expanded(
-    child: SingleChildScrollView(
-      child: buildMatrixCard(
-        title: 'E Block AC',
-        rows: 27,
-        cols: 4,
-        unavailableSeats: {},
-      ),
-    ),
-  )
-else if (selectedBlock == 'E Block Non AC')
-  Expanded(
-    child: SingleChildScrollView(
-      child: buildMatrixCard(
-        title: 'E Block Non AC',
-        rows: 30,
-        cols: 4,
-        unavailableSeats: eBlockNonAcUnavailable,
-      ),
-    ),
-  ),
+            Text(
+              block,
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            ),
           ],
         ),
-      ),
-    );
-  }
+        const SizedBox(height: 20),
+        Expanded(
+          child: GridView.count(
+            crossAxisCount: 2,
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 16,
+            children: floorData.map((floor) {
+              final String title = floor["label"]!;
+              final String iconCode = floor["icon"]!;
+              IconData icon = iconCode == "ac" ? Icons.ac_unit : Icons.stairs;
 
-  Widget buildLegend() {
-    return Row(
-      children: [
-        buildLegendItem(Colors.green.shade300, 'Available'),
-        const SizedBox(width: 16),
-        buildLegendItem(Colors.red.shade300, 'Unavailable'),
-      ],
-    );
-  }
-
-  Widget buildLegendItem(Color color, String label) {
-    return Row(
-      children: [
-        Container(
-          width: 20,
-          height: 20,
-          color: color,
-          margin: const EdgeInsets.only(right: 6),
+              return GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => OccupancySelectionPage(
+                        block: block,
+                        floor: title,
+                      ),
+                    ),
+                  );
+                },
+                child: Card(
+                  elevation: 3,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  color: Colors.orange.shade50,
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(icon, size: 36, color: Colors.deepOrange),
+                        const SizedBox(height: 12),
+                        Text(
+                          title,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          textAlign: TextAlign.center,
+                        )
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
         ),
-        Text(label),
       ],
     );
   }
+}
 
-  Widget buildMatrixCard({
-    required String title,
-    required int rows,
-    required int cols,
-    required Set<String> unavailableSeats,
-  }) {
-    final matrixKey = selectedBlock! + '-' + title;
-    return Card(
-      elevation: 2,
-      color: Colors.grey.shade100,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
+class OccupancySelectionPage extends StatelessWidget {
+  final String block;
+  final String floor;
+
+  const OccupancySelectionPage({
+    super.key,
+    required this.block,
+    required this.floor,
+  });
+
+  List<int> getOccupancyOptions() {
+    if (block == "Block A") {
+      if (floor == "Ground Floor") return [4, 3, 2];
+      if (floor == "First Floor") return [4, 2];
+    } else if (block == "Block E") {
+      if (floor == "First Floor") return [4, 2];
+      if (floor.contains("Third")) return [4];
+    }
+    return [];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final options = getOccupancyOptions();
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('$block - $floor'),
+        backgroundColor: Colors.teal,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(24.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              title,
-              style:
-                  Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            const Text(
+              "Select Occupancy Type",
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 12),
-
-buildSeatMatrix(
-  rows: rows,
-  cols: cols,
-  unavailableSeats: unavailableSeats,
-  selectedSeat: selectedSeats[matrixKey],
-  onSeatTap: (seatKey) {
-  setState(() {
-    // Clear all previous selections
-    selectedSeats.clear();
-    
-    // Save only the new selection
-    selectedSeats[matrixKey] = seatKey;
-  });
-},
-),
+            const SizedBox(height: 24),
+            Column(
+              children: options.map((e) {
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => SeatMatrixPage(
+                            block: block,
+                            floor: floor,
+                            occupancy: e,
+                          ),
+                        ),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                    child: Text("$e per room"),
+                  ),
+                );
+              }).toList(),
+            ),
           ],
         ),
       ),
@@ -178,57 +237,156 @@ buildSeatMatrix(
   }
 }
 
-/// Reusable function to build a seat matrix
-Widget buildSeatMatrix({
-  required int rows,
-  required int cols,
-  required Set<String> unavailableSeats,
-  required String? selectedSeat,
-  required Function(String seatKey) onSeatTap,
-}) {
-  return Column(
-    children: List.generate(rows, (row) {
-      return Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: List.generate(cols, (col) {
-          final seatKey = '${row + 1}-${col + 1}';
-          final isUnavailable = unavailableSeats.contains(seatKey);
-          final isSelected = selectedSeat == seatKey;
+class SeatMatrixPage extends StatefulWidget {
+  final String block;
+  final String floor;
+  final int occupancy;
 
-          Color seatColor;
-          if (isUnavailable) {
-            seatColor = Colors.red.shade300;
-          } else if (isSelected) {
-            seatColor = Colors.yellow.shade600;
-          } else {
-            seatColor = Colors.green.shade300;
-          }
+  const SeatMatrixPage({
+    super.key,
+    required this.block,
+    required this.floor,
+    required this.occupancy,
+  });
 
-          return GestureDetector(
-            onTap: isUnavailable
-                ? null
-                : () {
-                    onSeatTap(seatKey);
-                  },
-            child: Container(
-              margin: const EdgeInsets.all(6),
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: seatColor,
-                border: Border.all(color: Colors.black45),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Center(
-                child: Text(
-                  seatKey,
-                  style: const TextStyle(fontSize: 10),
+  @override
+  State<SeatMatrixPage> createState() => _SeatMatrixPageState();
+}
+
+class _SeatMatrixPageState extends State<SeatMatrixPage> {
+  int? selectedRoom;
+  int? selectedSeatIndex;
+
+  @override
+  Widget build(BuildContext context) {
+    List<int> roomNumbers = generateRoomNumbers(
+      block: widget.block,
+      floor: widget.floor,
+      occupancy: widget.occupancy,
+    );
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('${widget.block} - ${widget.floor}'),
+        backgroundColor: Colors.teal,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.check_circle),
+            onPressed: () {
+              if (selectedRoom != null && selectedSeatIndex != null) {
+                showDialog(
+                  context: context,
+                  builder: (_) => AlertDialog(
+                    title: const Text("Summary"),
+                    content: Text(
+                        "Block: ${widget.block}\nFloor: ${widget.floor}\nOccupancy: ${widget.occupancy} per room\nRoom: $selectedRoom\nSeat: ${selectedSeatIndex! + 1}"),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text("OK"),
+                      )
+                    ],
+                  ),
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Please select a seat.")),
+                );
+              }
+            },
+          )
+        ],
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: buildMatrix(roomNumbers, widget.occupancy),
+      ),
+    );
+  }
+
+  Widget buildMatrix(List<int> roomNumbers, int cols) {
+    return SingleChildScrollView(
+      child: Column(
+        children: roomNumbers.map((roomNumber) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 40,
+                  child: Text(
+                    '$roomNumber →',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                    textAlign: TextAlign.right,
+                  ),
                 ),
-              ),
+                const SizedBox(width: 10),
+                ...List.generate(cols, (index) {
+                  bool isSelected =
+                      selectedRoom == roomNumber && selectedSeatIndex == index;
+
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        selectedRoom = roomNumber;
+                        selectedSeatIndex = index;
+                      });
+                    },
+                    child: Container(
+                      width: 50,
+                      height: 50,
+                      margin: const EdgeInsets.symmetric(horizontal: 6),
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? Colors.green.shade200
+                            : Colors.blue.shade50,
+                        border: Border.all(
+                            color: isSelected
+                                ? Colors.green
+                                : Colors.blueAccent),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text('${index + 1}',
+                          style: const TextStyle(fontWeight: FontWeight.w600)),
+                    ),
+                  );
+                }),
+              ],
             ),
           );
-        }),
-      );
-    }),
-  );
+        }).toList(),
+      ),
+    );
+  }
+
+  List<int> generateRoomNumbers({
+    required String block,
+    required String floor,
+    required int occupancy,
+  }) {
+    if (block == "Block A") {
+      if (floor == "Ground Floor") {
+        if (occupancy == 4) return [...List.generate(5, (i) => i + 1), ...List.generate(8, (i) => i + 7)];
+        if (occupancy == 3) return [15];
+        if (occupancy == 2) return [6];
+      }
+      if (floor == "First Floor") {
+        if (occupancy == 4) return [...List.generate(4, (i) => i + 16), ...List.generate(9, (i) => i + 22)];
+        if (occupancy == 2) return [20, 21];
+      }
+    } else if (block == "Block E") {
+      if (floor == "First Floor") {
+        if (occupancy == 4) return [for (int i = 30; i <= 52; i++) i, 56, 57, 58, 59];
+        if (occupancy == 2) return [53, 54, 55];
+      }
+      if (floor.contains("Third")) {
+        if (occupancy == 4) return [for (int i = 89; i <= 115; i++) i];
+      }
+    }
+    return [];
+  }
 }
